@@ -1,0 +1,60 @@
+======================
+Klijentska aplikacija:
+======================
+
+- Pravimo je kao novi Maven JavaSE projekat (Maven/Java Application)
+- Ima interfejs sa svim metodima koji postoje na serverskoj strani, zapisane u skladu sa retrofit sintaskom.
+- Ima retrofit objekat kreiran nad ovim interfejsom koji nam omogucava da saljemo bilo koji od tih zahteva ka nasoj serverskoj strani.
+  U sustini sada ne saljemo zahteve kroz Postman alat, nego u main metodi klijentske aplikacije zadajemo koju stranicu zelimo da posetimo i sa kojim parametrima.
+- Telo main metode je cini mi se zamisljeno kao:
+	Beskonacna while petlja koja ocitava konzolu. 
+		Mi unosimo u konzolu odabir koju od svih mogucih metoda zelimo.
+		Izvrsava se slanje tog zahteva ka serverskoj strani i primanje odgovora koji se prikazuje u konzoli.
+
+- Izmenio pom.xml (morao jos neke stvari dodati u njega sem onih na si wiki vodicu)
+- Napravio Korisnik.java (polja se moraju zvati isto kao na serverskoj strani, ali ih ne moras sve navesti)
+- Napravio KlijentResource.java (to je taj interfejs sa potpisima svih zahteva koje cemo slati ka serverskoj strani i tamo ih obradjivati)
+- Napravio Klijent_proba.java (pravi Retrofit objekat i koristi ga za slanje 
+
+
+===========
+PODSISTEMI:
+===========
+
+- U workbenchu napravio novog korisnika (admin,123) u Administration/UsersAndPrivileges u nekoj postojecoj konekciji i cekirao mu sve u AdministrativeRoles da bi mogao da izvrsava upite. 
+- U netbeansu otisao u Services, desni klik na databases, new connection i napravio konekciju na db1 sa kredencijalima admin i 123.
+- Izmenio presistence.xml da koristi db1 i admin ako vec nije tako uradjeno.
+- Napravio redove na glassfishu
+- Na glassfishu NE pravis u JMSResources novu fabriku, koristis deafult fabriku.
+
+- Necu raditi JDBC konekciju svakog podsistema na svoju bazu (znaci necu na glassfishu nikakve bazene i resurse praviti) jer nisam siguran da li bih onda morao da koristim poseban port za svaki podsistem iako sve seme u workbenchu pripadaju istoj konekciji na portu 3306
+- Ostavio sam persistence.xml onako kako ga je netbeans izgenerisao za ant projekat (znaci RESOURCE-LOCAL), samo dodao jos ona dva SSL svojstva. 
+
+PAZI: 
+- Morao da uvezes lokalno eclipselink biblioteku umesto postojece u Ant projekte (edit na ovu biblioteku u project libraries, remove sve njene jar fajlove i dodas ih sa neke lokacije bez razmaka)
+- Morao da dodam i javaee-api-8.0 jar fajl u libraries.
+- Morao u libraries projekta da dodam isti onaj konetkor jar sto se nalazi u glassfish/lib. Razlog je sto nisam radio ove JDBC konekcije, nego resource-local.
+
+
+		
+=======
+SERVER:
+=======
+- Napravi Web Aplikaciju za centralni server, ali nemoj nikakav jdbc pool i resource jer sad podsistemi komuniciraju sa bazama, ne server. 
+	
+- Posto cemo na klijentskoj strani primati JSON objekte umesto XML objekata, 
+	treba iznad putanja na serverskoj strani dodati @Produces(MediaType.APPLICATION_JSON), 
+	a onda dodatno sem @XmlTransient dodati i @JsonbTransient na istim onim mestima u entities
+	(atributima tipa specifikacije, kao i metoda za dohvatanje lista entities objekta koji kod sebe vec dohvataju obrnuto).
+	
+
+PAZI:
+- Ne radi lepo ako ne proglasis za Singleton 
+- Ne radi lepo ako ne dodas JMSReplyTo i JMSCorrelationID (poneka poruka se nece poslati)
+- Desavalo se da mi se zali da pri slanju poruke u queue podsistema koristim null destination za queue. Izgleda da mi je postojao neki stari "queue1" od kad sam spremao lab.. Napravio sam novi queue "queue11" umesto "queue1" i onda je radilo slanje poruka.
+- Ako menjas nesto u Zahtev, ili u kodu, moras da uradis clean&build i na centralnom serveru i na podsistemu da bi radilo lepo.
+
+- Podsistemi 2 i 3 u tabeli Korisnik imaju samo id, jer za zahteve koji se salju na ove sisteme nam je jedino vazno da utvrdimo da li korisnik sa zadatim id postoji, nema potrebe da podsistem1 prosledjuje ovim podsistemima i zahteve za azuriranjem email i mesta i korisnika, vec samo zahtev za dodavanjem novog korisnika. Ovim svi podsistemi imaju azuzirane informacije o korisniku (jedino im je informacija o postojanju korisnika svima potrebna, a samo podsistemu1 trebaju ostale informacije o korisniku).
+
+
+- Pokrenes serversku aplikaciju (ili samo glassfish server), a onda klijentsku aplikaciju. 
